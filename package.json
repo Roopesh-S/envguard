@@ -1,0 +1,24 @@
+{
+  "name": "envguard",
+  "version": "1.0.0",
+  "description": "A zero-boilerplate env validator",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rohan-Shridhar/envguard.git"
+  },
+  "keywords": [
+    "env",
+    "dotenv",
+    "environment-variables"
+  ],
+  "author": "Rohan Mirjankar",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Rohan-Shridhar/envguard/issues"
+  },
+  "homepage": "https://github.com/Rohan-Shridhar/envguard#readme"
+}
