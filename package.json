@@ -1,10 +1,11 @@
 {
-  "name": "envguard",
+  "name": "@rohansm14/envguard",
   "version": "1.0.0",
+  "type": "module",
   "description": "A zero-boilerplate env validator",
   "main": "index.js",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test tests/guard.test.js"
   },
   "repository": {
     "type": "git",
