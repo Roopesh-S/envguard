@@ -1,2 +1,5 @@
 import { guard } from "./guard.js";
-export { guard };
+import { inferEnv } from "./infer.js";
+import { coerce, inferType, isBoolean, isNumeric } from "./utils.js";
+
+export { guard, inferEnv, coerce, inferType, isBoolean, isNumeric };

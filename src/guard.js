@@ -1,4 +1,11 @@
-function guard(schema) {
+import { coerce } from "./utils.js";
+
+/**
+ * Validates and coerces environment variables based on the schema.
+ * @param {Object} schema 
+ * @returns {Object}
+ */
+export function guard(schema) {
   const errors = [];
   const result = {};
 
@@ -20,23 +27,11 @@ function guard(schema) {
 
     // 3. coerce type
     if (raw) {
-      if (rule.type === "number") {
-        const num = Number(raw);
-        if (isNaN(num)) {
-          errors.push(`  ✗ ${key} → expected number, got "${raw}"`);
-          continue;
-        }
-        result[key] = num;
-      } else if (rule.type === "boolean") {
-        if (raw !== "true" && raw !== "false") {
-          errors.push(
-            `  ✗ ${key} → expected boolean (true/false), got "${raw}"`,
-          );
-          continue;
-        }
-        result[key] = raw === "true";
-      } else {
-        result[key] = raw;
+      try {
+        result[key] = coerce(raw, rule.type);
+      } catch (e) {
+        errors.push(`  ✗ ${key} → ${e.message}, got "${raw}"`);
+        continue;
       }
 
       // 4. minLength check (strings only)
@@ -58,5 +53,3 @@ function guard(schema) {
 
   return result;
 }
-
-export { guard };
