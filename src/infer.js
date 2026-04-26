@@ -1,12 +1,14 @@
-import { coerce, inferType } from "./utils.js";
+import { coerce, inferType, isBoolean, isNumeric } from "./utils.js";
 
 /**
- * Infers types from process.env string values, with optional overrides.
- * @param {Object} [overrides={}] 
+ * Infers types from process.env string values, with optional overrides and strict mode.
+ * @param {Object} [config={}] 
  * @returns {Object} An object with inferred values.
  */
-export function inferEnv(overrides = {}) {
+export function inferEnv(config = {}) {
+  const { strict = false, ...overrides } = config;
   const inferred = {};
+  const errors = [];
 
   for (const [key, value] of Object.entries(process.env)) {
     const override = overrides[key];
@@ -15,11 +17,34 @@ export function inferEnv(overrides = {}) {
       try {
         inferred[key] = coerce(value, override.type);
       } catch (e) {
-        throw new Error(`[envguard] Override failed for ${key}: ${e.message}, got "${value}"`);
+        errors.push(`  ✗ ${key} → override failed: ${e.message}, got "${value}"`);
       }
     } else {
+      if (strict) {
+        // Enforce safe inference
+        const lower = value.toLowerCase();
+        if (lower === "true" || lower === "false") {
+          if (!isBoolean(value)) {
+            errors.push(
+              `  ✗ ${key} → ambiguous boolean: expected exact "true" or "false", got "${value}"`,
+            );
+          }
+        } else if (!isNaN(parseFloat(value)) && !isNumeric(value)) {
+          errors.push(
+            `  ✗ ${key} → invalid numeric string: contains non-numeric characters, got "${value}"`,
+          );
+        }
+      }
       inferred[key] = inferType(value);
     }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(
+      `\n[envguard] Strict inference failed:\n${errors.join(
+        "\n",
+      )}\n\nReview your environment variables.`,
+    );
   }
 
   return inferred;
