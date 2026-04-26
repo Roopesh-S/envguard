@@ -1,21 +1,4 @@
-import { coerce } from "./guard.js";
-
-/**
- * Infers the type of a string value.
- * @param {string} value 
- * @returns {string|number|boolean}
- */
-export function inferType(value) {
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-
-  // Check if strictly a numeric string
-  if (value !== '' && !isNaN(Number(value)) && !isNaN(parseFloat(value))) {
-    return Number(value);
-  }
-
-  return value;
-}
+import { coerce, inferType } from "./utils.js";
 
 /**
  * Infers types from process.env string values, with optional overrides.

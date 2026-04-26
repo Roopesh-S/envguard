@@ -1,23 +1,4 @@
-/**
- * Coerces a value based on the specified type.
- * @param {string} value 
- * @param {string} type 
- * @returns {*}
- * @throws {Error} If coercion fails
- */
-export function coerce(value, type) {
-  if (type === "number") {
-    const num = Number(value);
-    if (isNaN(num)) throw new Error("expected number");
-    return num;
-  } else if (type === "boolean") {
-    if (value !== "true" && value !== "false") {
-      throw new Error("expected boolean (true/false)");
-    }
-    return value === "true";
-  }
-  return value;
-}
+import { coerce } from "./utils.js";
 
 /**
  * Validates and coerces environment variables based on the schema.
