@@ -3,14 +3,15 @@ import { coerce, inferType, isBoolean, isNumeric } from "./utils.js";
 /**
  * Infers types from process.env string values, with optional overrides and strict mode.
  * @param {Object} [config={}] 
+ * @param {Object} [env=process.env]
  * @returns {Object} An object with inferred values.
  */
-export function inferEnv(config = {}) {
+export function inferEnv(config = {}, env = process.env) {
   const { strict = false, ...overrides } = config;
   const inferred = {};
   const errors = [];
 
-  for (const [key, value] of Object.entries(process.env)) {
+  for (const [key, value] of Object.entries(env)) {
     const override = overrides[key];
 
     if (override) {
