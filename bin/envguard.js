@@ -8,15 +8,13 @@ async function run() {
   const rootDir = process.cwd();
   const envPath = path.join(rootDir, ".env");
 
-  console.log("\n🔍 Scanning codebase for environment variables...\n");
-
   try {
     // 1. Read and parse .env
     let envContent = "";
     try {
       envContent = await fs.readFile(envPath, "utf8");
     } catch (err) {
-      console.warn("⚠️  Warning: .env file not found in current directory.\n");
+      // Fallback to empty if no .env found
     }
     const envVars = parseEnv(envContent);
 
@@ -27,29 +25,26 @@ async function run() {
     const { unused, missing } = analyzeEnv(envVars, usedVars);
 
     // 4. Output Report
-    let clean = true;
+    console.log("\n[envguard] Environment Variable Report:");
+
+    if (unused.length === 0 && missing.length === 0) {
+      console.log("\n  ✓ All environment variables are in sync\n");
+      return;
+    }
 
     if (unused.length > 0) {
-      clean = false;
-      console.log("🚫 Unused (Defined in .env but not found in code):");
+      console.log("\nUnused variables (.env but not used):");
       unused.forEach((v) => console.log(`  - ${v}`));
-      console.log("");
     }
 
     if (missing.length > 0) {
-      clean = false;
-      console.log("❓ Missing (Used in code but not defined in .env):");
+      console.log("\nMissing variables (used in code but not in .env):");
       missing.forEach((v) => console.log(`  - ${v}`));
-      console.log("");
     }
 
-    if (clean) {
-      console.log("✅ Everything looks good! No unused or missing variables found.");
-    }
-
-    console.log("\nDone.\n");
+    console.log("");
   } catch (error) {
-    console.error("❌ Error during scan:", error.message);
+    console.error("\n[envguard] Error during scan:", error.message);
     process.exit(1);
   }
 }
