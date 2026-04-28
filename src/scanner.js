@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import { parseEnv } from "./utils.js";
 
 /**
  * Recursively scans a directory for files matching certain extensions.
@@ -54,15 +55,65 @@ export async function scanUsedVars(rootDir) {
 }
 
 /**
- * Analyzes the difference between defined and used variables.
- * @param {Object} envVars - Object containing defined env variables.
- * @param {Set<string>} usedVars - Set of variables used in code.
- * @returns {Object} Unused and missing variables.
+ * Internal helper to compare defined and used variables.
+ * @param {Object} envVars 
+ * @param {Set<string>} usedVars 
+ * @returns {Object}
  */
-export function analyzeEnv(envVars, usedVars) {
+export function compareEnvVars(envVars, usedVars) {
   const defined = Object.keys(envVars);
   const unused = defined.filter((v) => !usedVars.has(v));
   const missing = Array.from(usedVars).filter((v) => !defined.includes(v));
   
   return { unused, missing };
+}
+
+/**
+ * Orchestrates the full .env/codebase analysis and prints a report.
+ * @param {Object} options
+ * @param {string} [options.envPath=".env"] - Path to the .env file.
+ * @param {string} [options.rootDir=process.cwd()] - Root directory of the codebase.
+ */
+export async function analyzeEnv({ envPath = ".env", rootDir = process.cwd() } = {}) {
+  try {
+    // 1. Parse .env
+    const absEnvPath = path.resolve(process.cwd(), envPath);
+    let envContent = "";
+    try {
+      envContent = await fs.readFile(absEnvPath, "utf8");
+    } catch (err) {
+      // Treat as empty if file is missing
+    }
+    const envVars = parseEnv(envContent);
+
+    // 2. Scan codebase
+    const usedVars = await scanUsedVars(path.resolve(process.cwd(), rootDir));
+
+    // 3. Compare
+    const { unused, missing } = compareEnvVars(envVars, usedVars);
+
+    // 4. Print report
+    console.log("\n[envguard] Environment Variable Report:");
+
+    if (unused.length === 0 && missing.length === 0) {
+      console.log("\n  ✓ All environment variables are in sync\n");
+      return { unused, missing };
+    }
+
+    if (unused.length > 0) {
+      console.log("\nUnused variables (.env but not used):");
+      unused.forEach((v) => console.log(`  - ${v}`));
+    }
+
+    if (missing.length > 0) {
+      console.log("\nMissing variables (used in code but not in .env):");
+      missing.forEach((v) => console.log(`  - ${v}`));
+    }
+
+    console.log("");
+    return { unused, missing };
+  } catch (error) {
+    console.error("\n[envguard] Error during analysis:", error.message);
+    throw error;
+  }
 }
