@@ -24,14 +24,19 @@ export async function startDevServer(port = 3000) {
         } catch (e) {}
 
         const envVars = parseEnv(envContent);
-        const usedVars = await scanUsedVars(rootDir);
+        const usedVarsArray = await scanUsedVars(rootDir);
+        const usedVars = new Set(usedVarsArray);
         const { unused, missing } = compareEnvVars(envVars, usedVars);
+
+        const defined = Object.keys(envVars);
+        const used = defined.filter((v) => usedVars.has(v));
 
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
-          allVars: envVars,
+          total: defined.length,
           unused,
-          missing
+          missing,
+          used
         }));
       } catch (err) {
         res.writeHead(500);
