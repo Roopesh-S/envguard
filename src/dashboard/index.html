@@ -14,6 +14,7 @@
             --red: #ef4444;
             --yellow: #f59e0b;
             --green: #10b981;
+            --orange: #f97316;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -101,6 +102,7 @@
         .color-unused { color: var(--red); }
         .color-missing { color: var(--yellow); }
         .color-used { color: var(--green); }
+        .color-invalid { color: var(--orange); }
 
     </style>
 </head>
@@ -125,12 +127,23 @@
                 <div class="stat-value color-missing" id="stat-missing">-</div>
             </div>
             <div class="stat-card">
+                <div class="stat-label">Invalid</div>
+                <div class="stat-value color-invalid" id="stat-invalid">-</div>
+            </div>
+            <div class="stat-card">
                 <div class="stat-label">System Active</div>
                 <div class="stat-value color-used" id="stat-used">-</div>
             </div>
         </div>
 
         <div class="list-section">
+            <div class="category">
+                <div class="category-header">
+                    <h2 class="color-invalid">Invalid Values (Required Check)</h2>
+                </div>
+                <ul class="category-list" id="list-invalid"></ul>
+            </div>
+
             <div class="category">
                 <div class="category-header">
                     <h2 class="color-missing">Missing in .env (Used in Code)</h2>
@@ -164,9 +177,11 @@
                 document.getElementById('stat-total').innerText = data.total;
                 document.getElementById('stat-unused').innerText = data.unused.length;
                 document.getElementById('stat-missing').innerText = data.missing.length;
+                document.getElementById('stat-invalid').innerText = data.invalid.length;
                 document.getElementById('stat-used').innerText = data.used.length;
 
                 // Update Lists
+                renderList('list-invalid', data.invalid);
                 renderList('list-missing', data.missing);
                 renderList('list-unused', data.unused);
                 renderList('list-used', data.used);

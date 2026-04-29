@@ -30,13 +30,18 @@ export async function startDevServer(port = 3000) {
 
         const defined = Object.keys(envVars);
         const used = defined.filter((v) => usedVars.has(v));
+        const invalid = defined.filter((key) => {
+          const val = envVars[key];
+          return val === "" || val === "null" || val === "undefined";
+        });
 
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
           total: defined.length,
           unused,
           missing,
-          used
+          used,
+          invalid
         }));
       } catch (err) {
         res.writeHead(500);
