@@ -34,19 +34,51 @@ export async function scanUsedVars(rootDir) {
   const files = await getFiles(rootDir);
   const usedVars = new Set();
   
-  // Matches process.env.VAR or process.env['VAR'] or process.env["VAR"]
-  const regex = /process\.env\.([a-zA-Z_][a-zA-Z0-9_]*)|process\.env\[['"]([a-zA-Z_][a-zA-Z0-9_]*)['"]\]/g;
+  // 1. Matches process.env.VAR or process.env?.VAR
+  const dotRegex = /process\.env(?:\?\.|\.)([a-zA-Z_][a-zA-Z0-9_]*)/g;
+
+  // 2. Matches process.env['VAR'] or process.env?.['VAR'] or process.env?.['VAR']
+  const bracketRegex = /process\.env(?:\?\.)?\[['"]([a-zA-Z_][a-zA-Z0-9_]*)['"]\]/g;
+
+  // 3. Matches const { VAR1, VAR2: alias } = process.env
+  const destructureRegex = /(?:const|let|var)\s+\{\s*([^}]+)\s*\}\s*=\s*process\.env/g;
 
   for (const file of files) {
     try {
-      const content = await fs.readFile(file, "utf8");
+      const originalContent = await fs.readFile(file, "utf8");
+      
+      // Strip comments to avoid false positives (simple but effective for most cases)
+      const content = originalContent.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, "");
+
       let match;
-      while ((match = regex.exec(content)) !== null) {
-        const varName = match[1] || match[2];
-        if (varName) usedVars.add(varName);
+
+      // Scan Dot Notation
+      while ((match = dotRegex.exec(content)) !== null) {
+        if (match[1]) usedVars.add(match[1]);
       }
+
+      // Scan Bracket Notation
+      while ((match = bracketRegex.exec(content)) !== null) {
+        if (match[1]) usedVars.add(match[1]);
+      }
+
+      // Scan Destructuring
+      while ((match = destructureRegex.exec(content)) !== null) {
+        const properties = match[1].split(",");
+        for (let prop of properties) {
+          prop = prop.trim();
+          if (!prop) continue;
+          
+          // Handle aliases: { VAR: alias }
+          const name = prop.split(":")[0].trim();
+          // Avoid matching rest elements: { ...others }
+          if (!name.startsWith("...")) {
+            usedVars.add(name);
+          }
+        }
+      }
+
     } catch (err) {
-      // Skip files that can't be read
       continue;
     }
   }
