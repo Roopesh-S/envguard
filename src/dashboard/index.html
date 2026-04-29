@@ -5,25 +5,190 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EnvGuard Dashboard</title>
     <style>
-        body { font-family: system-ui; background: #0f172a; color: white; padding: 2rem; }
-        h1 { color: #38bdf8; }
-        .card { background: #1e293b; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --subtext: #94a3b8;
+            --primary: #38bdf8;
+            --red: #ef4444;
+            --yellow: #f59e0b;
+            --green: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 { font-size: 1.875rem; font-weight: 700; color: var(--primary); }
+        .badge { background: #334155; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; color: var(--subtext); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-label { font-size: 0.875rem; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        .stat-value { font-size: 2.25rem; font-weight: 700; margin-top: 0.5rem; }
+
+        .list-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        .category {
+            background: var(--card);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+
+        .category-header {
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .category-header h2 { font-size: 1rem; font-weight: 600; }
+        .category-list { padding: 1rem 1.5rem; list-style: none; }
+        .category-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #334155;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.9375rem;
+            color: var(--subtext);
+        }
+        .category-list li:last-child { border-bottom: none; }
+        .category-list li::before { content: "• "; color: var(--primary); margin-right: 0.5rem; }
+
+        .empty-msg { color: #475569; font-style: italic; font-size: 0.875rem; }
+
+        /* Status Colors */
+        .color-total { color: var(--primary); }
+        .color-unused { color: var(--red); }
+        .color-missing { color: var(--yellow); }
+        .color-used { color: var(--green); }
+
     </style>
 </head>
 <body>
-    <h1>[envguard] Dashboard</h1>
-    <div id="status">Loading analysis...</div>
+    <div class="container">
+        <header>
+            <h1>EnvGuard Dashboard</h1>
+            <div class="badge" id="last-updated">Updating...</div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total in .env</div>
+                <div class="stat-value color-total" id="stat-total">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Unused</div>
+                <div class="stat-value color-unused" id="stat-unused">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Missing</div>
+                <div class="stat-value color-missing" id="stat-missing">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">System Active</div>
+                <div class="stat-value color-used" id="stat-used">-</div>
+            </div>
+        </div>
+
+        <div class="list-section">
+            <div class="category">
+                <div class="category-header">
+                    <h2 class="color-missing">Missing in .env (Used in Code)</h2>
+                </div>
+                <ul class="category-list" id="list-missing"></ul>
+            </div>
+
+            <div class="category">
+                <div class="category-header">
+                    <h2 class="color-unused">Unused in Code (Defined in .env)</h2>
+                </div>
+                <ul class="category-list" id="list-unused"></ul>
+            </div>
+
+            <div class="category">
+                <div class="category-header">
+                    <h2 class="color-used">Properly Linked</h2>
+                </div>
+                <ul class="category-list" id="list-used"></ul>
+            </div>
+        </div>
+    </div>
+
     <script>
-        async function fetchEnv() {
+        async function updateDashboard() {
             try {
                 const res = await fetch('/api/env');
                 const data = await res.json();
-                document.getElementById('status').innerText = JSON.stringify(data, null, 2);
-            } catch (e) {
-                document.getElementById('status').innerText = 'Error loading data';
+
+                // Update Stats
+                document.getElementById('stat-total').innerText = data.total;
+                document.getElementById('stat-unused').innerText = data.unused.length;
+                document.getElementById('stat-missing').innerText = data.missing.length;
+                document.getElementById('stat-used').innerText = data.used.length;
+
+                // Update Lists
+                renderList('list-missing', data.missing);
+                renderList('list-unused', data.unused);
+                renderList('list-used', data.used);
+
+                document.getElementById('last-updated').innerText = 'Live: ' + new Date().toLocaleTimeString();
+            } catch (err) {
+                console.error('Failed to fetch env data', err);
             }
         }
-        fetchEnv();
+
+        function renderList(id, items) {
+            const el = document.getElementById(id);
+            if (items.length === 0) {
+                el.innerHTML = '<li class="empty-msg">No variables found</li>';
+                return;
+            }
+            el.innerHTML = items.map(item => `<li>${item}</li>`).join('');
+        }
+
+        // Initial update and poll
+        updateDashboard();
+        setInterval(updateDashboard, 3000);
     </script>
 </body>
 </html>
