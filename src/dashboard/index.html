@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnvGuard Dashboard</title>
+    <style>
+        body { font-family: system-ui; background: #0f172a; color: white; padding: 2rem; }
+        h1 { color: #38bdf8; }
+        .card { background: #1e293b; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <h1>[envguard] Dashboard</h1>
+    <div id="status">Loading analysis...</div>
+    <script>
+        async function fetchEnv() {
+            try {
+                const res = await fetch('/api/env');
+                const data = await res.json();
+                document.getElementById('status').innerText = JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.getElementById('status').innerText = 'Error loading data';
+            }
+        }
+        fetchEnv();
+    </script>
+</body>
+</html>
