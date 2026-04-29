@@ -85,6 +85,14 @@
         }
 
         .category-header h2 { font-size: 1rem; font-weight: 600; }
+        .category-header .count { 
+            font-size: 0.8125rem; 
+            background: rgba(0,0,0,0.2); 
+            padding: 0.125rem 0.5rem; 
+            border-radius: 4px;
+            color: var(--subtext);
+        }
+
         .category-list { padding: 1rem 1.5rem; list-style: none; }
         .category-list li {
             padding: 0.5rem 0;
@@ -92,9 +100,12 @@
             font-family: 'JetBrains Mono', 'Fira Code', monospace;
             font-size: 0.9375rem;
             color: var(--subtext);
+            display: flex;
+            align-items: center;
         }
         .category-list li:last-child { border-bottom: none; }
-        .category-list li::before { content: "• "; color: var(--primary); margin-right: 0.5rem; }
+        
+        .status-mark { margin-right: 0.75rem; font-weight: bold; }
 
         .empty-msg { color: #475569; font-style: italic; font-size: 0.875rem; }
 
@@ -158,6 +169,7 @@
             <div class="category">
                 <div class="category-header">
                     <h2 class="color-mismatch">Type Mismatches (Schema Conflict)</h2>
+                    <span class="count" id="count-mismatch">0</span>
                 </div>
                 <ul class="category-list" id="list-mismatch"></ul>
             </div>
@@ -165,6 +177,7 @@
             <div class="category">
                 <div class="category-header">
                     <h2 class="color-invalid">Invalid Values (Required Check)</h2>
+                    <span class="count" id="count-invalid">0</span>
                 </div>
                 <ul class="category-list" id="list-invalid"></ul>
             </div>
@@ -172,6 +185,7 @@
             <div class="category">
                 <div class="category-header">
                     <h2 class="color-missing">Missing in .env (Used in Code)</h2>
+                    <span class="count" id="count-missing">0</span>
                 </div>
                 <ul class="category-list" id="list-missing"></ul>
             </div>
@@ -179,6 +193,7 @@
             <div class="category">
                 <div class="category-header">
                     <h2 class="color-unused">Unused in Code (Defined in .env)</h2>
+                    <span class="count" id="count-unused">0</span>
                 </div>
                 <ul class="category-list" id="list-unused"></ul>
             </div>
@@ -186,6 +201,7 @@
             <div class="category">
                 <div class="category-header">
                     <h2 class="color-used">Properly Linked</h2>
+                    <span class="count" id="count-used">0</span>
                 </div>
                 <ul class="category-list" id="list-used"></ul>
             </div>
@@ -205,14 +221,22 @@
                 document.getElementById('stat-invalid').innerText = data.invalid.length;
                 document.getElementById('stat-used').innerText = data.used.length;
 
-                // Update Lists
+                // Update Header Counts
+                document.getElementById('count-mismatch').innerText = data.typeMismatches.length;
+                document.getElementById('count-invalid').innerText = data.invalid.length;
+                document.getElementById('count-missing').innerText = data.missing.length;
+                document.getElementById('count-unused').innerText = data.unused.length;
+                document.getElementById('count-used').innerText = data.used.length;
+
+                // Update Lists (Sorted Alphabetically)
                 renderList('list-mismatch', data.typeMismatches.map(m => 
-                    `${m.key} <small>(Expected: ${m.expected}, Got: ${m.actual})</small>`
-                ));
-                renderList('list-invalid', data.invalid);
-                renderList('list-missing', data.missing);
-                renderList('list-unused', data.unused);
-                renderList('list-used', data.used);
+                    `${m.key} <small style="margin-left:auto">(Expected: ${m.expected}, Got: ${m.actual})</small>`
+                ), '✗');
+
+                renderList('list-invalid', data.invalid, '⚠');
+                renderList('list-missing', data.missing, '✗');
+                renderList('list-unused', data.unused, '⚠');
+                renderList('list-used', data.used, '✓');
 
                 document.getElementById('last-updated').innerText = 'Live: ' + new Date().toLocaleTimeString();
             } catch (err) {
@@ -220,13 +244,21 @@
             }
         }
 
-        function renderList(id, items) {
+        function renderList(id, items, badge) {
             const el = document.getElementById(id);
             if (items.length === 0) {
                 el.innerHTML = '<li class="empty-msg">No variables found</li>';
                 return;
             }
-            el.innerHTML = items.map(item => `<li>${item}</li>`).join('');
+            // Sort items alphabetically (case-insensitive)
+            const sorted = [...items].sort((a, b) => a.localeCompare(b));
+            
+            el.innerHTML = sorted.map(item => `
+                <li>
+                    <span class="status-mark">${badge}</span>
+                    <span>${item}</span>
+                </li>
+            `).join('');
         }
 
         // Initial update and poll
