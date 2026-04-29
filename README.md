@@ -78,6 +78,17 @@ Starts a server at `http://localhost:3000` with:
 - **Type Mismatches**: Flagged conflicts between your values and an optional `env.schema.js`.
 - **Status Badges**: Clear `✓`, `⚠`, and `✗` indicators for every variable.
 
+### ⚠️ Important: How to View the Dashboard
+The dashboard is a **web application** that requires the `envguard` local server to be running.
+*   **Do NOT open `index.html` directly** from your browser (using `File > Open` or double-clicking).
+*   If you open the file directly, it will show **empty stats** because it won't be able to connect to the backend scanner.
+*   **Always use the command:** `npx envguard dev-ui` and navigate to `http://localhost:3000`.
+
+### Requirements
+- **Project Root**: Run the command from your project's root directory.
+- **`.env` file**: Must have a `.env` file present for comparison.
+- **Code Usage**: Must have at least one `process.env.VAR` usage in your code for the scanner to detect.
+
 ---
 
 ## What it does
