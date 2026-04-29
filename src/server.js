@@ -2,7 +2,7 @@ import http from "http";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { parseEnv, scanUsedVars, compareEnvVars } from "./index.js";
+import { parseEnv, scanUsedVars, compareEnvVars, inferType } from "./index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

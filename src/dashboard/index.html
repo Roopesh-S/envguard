@@ -106,13 +106,29 @@
         .color-invalid { color: var(--orange); }
         .color-mismatch { color: var(--purple); }
 
+        .btn {
+            background: var(--primary);
+            color: var(--bg);
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>EnvGuard Dashboard</h1>
-            <div class="badge" id="last-updated">Updating...</div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <button class="btn" onclick="updateDashboard()">Refresh Now</button>
+                <div class="badge" id="last-updated">Updating...</div>
+            </div>
         </header>
 
         <div class="stats-grid">
@@ -215,7 +231,7 @@
 
         // Initial update and poll
         updateDashboard();
-        setInterval(updateDashboard, 3000);
+        setInterval(updateDashboard, 2000);
     </script>
 </body>
 </html>
