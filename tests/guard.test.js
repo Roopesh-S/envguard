@@ -267,3 +267,43 @@ describe("edge cases", () => {
     assert.strictEqual(env.EXTRA, undefined);
   });
 });
+
+// ─── PROXY / SAFE ACCESS ─────────────────────────────────
+
+describe("proxy / safe access", () => {
+  it("throws when missing a validated key", () => {
+    delete process.env.OPTIONAL_DB;
+    const env = guard({ OPTIONAL_DB: { type: "string" } });
+    assert.throws(() => env.OPTIONAL_DB, /Attempted to access undefined environment variable: OPTIONAL_DB/);
+  });
+
+  it("does not throw for unvalidated keys in default mode", () => {
+    const env = guard({ PORT: { type: "number", default: 3000 } });
+    assert.strictEqual(env.UNKNOWN, undefined);
+  });
+
+  it("supports .has() method", () => {
+    delete process.env.OPTIONAL_DB;
+    const env = guard({ OPTIONAL_DB: { type: "string" } });
+    assert.strictEqual(env.has("OPTIONAL_DB"), false);
+
+    process.env.DB_URL = "test";
+    const env2 = guard({ DB_URL: { type: "string" } });
+    assert.strictEqual(env2.has("DB_URL"), true);
+  });
+});
+
+// ─── STRICT MODE ─────────────────────────────────────────
+
+describe("strict mode", () => {
+  it("throws on unvalidated keys when strict is true", () => {
+    const env = guard({ PORT: { type: "number", default: 3000 } }, { strict: true });
+    assert.throws(() => env.UNKNOWN, /Attempted to access undefined environment variable: UNKNOWN/);
+  });
+
+  it("allows standard object methods in strict mode", () => {
+    const env = guard({ PORT: { type: "number", default: 3000 } }, { strict: true });
+    assert.strictEqual(typeof env.toString, "function");
+    assert.strictEqual(typeof env.toJSON, "undefined"); 
+  });
+});

@@ -1,120 +1,113 @@
 # envguard
 
-A zero-boilerplate environment variable validator for Node.js.
+[![npm version](https://img.shields.io/npm/v/@rohansm14/envguard)](https://www.npmjs.com/package/@rohansm14/envguard)
+[![npm downloads](https://img.shields.io/npm/dm/@rohansm14/envguard)](https://www.npmjs.com/package/@rohansm14/envguard)
 
-Call it once at app startup — it checks all your env vars, coerces types, and throws a clear error if anything is missing or wrong. No more runtime crashes from undefined env vars.
+A zero-boilerplate environment variable validator and analysis tool for Node.js.
+
+🛡️ **Validate**: Coerce types and enforce schemas at startup.  
+🔍 **Analyze**: Detect unused or missing variables in your codebase.  
+📊 **Dashboard**: Visualize your environment health in a local dev UI.
 
 ---
 
 ## Install
 
 ```bash
-npm install envguard
+npm install @rohansm14/envguard
 ```
 
 ---
 
-## Usage
+## ⚡ Quick Start
+
+### 1. Validate & Coerce
+Call it at app startup to ensure your environment is safe.
 
 ```js
 import 'dotenv/config'
-import { guard } from 'envguard'
+import { guard } from '@rohansm14/envguard'
 
 const env = guard({
   PORT:         { type: 'number',  default: 3000 },
   DATABASE_URL: { type: 'string',  required: true },
-  DEBUG:        { type: 'boolean', default: false },
   JWT_SECRET:   { type: 'string',  required: true, minLength: 32 }
 })
 
 app.listen(env.PORT)
-mongoose.connect(env.DATABASE_URL)
+```
+
+### 2. Infer Types (Zero-schema)
+Don't want to maintain a schema? `inferEnv()` automatically detects types.
+
+```js
+import { inferEnv } from '@rohansm14/envguard'
+const env = inferEnv()
+
+// "3000"  → 3000 (number)
+// "true"  → true (boolean)
 ```
 
 ---
 
-## Zero-config mode
+## 🔍 Codebase Analysis (CLI)
 
-For rapid development or scripts where you don't want to maintain a schema, use `inferEnv()`. It automatically detects types from your environment variables.
+`envguard` scans your entire project to find discrepancies between your `.env` file and your code usage.
 
-```js
-import { inferEnv } from 'envguard'
-
-const env = inferEnv()
-
-// Automatically detects:
-// "3000"  → 3000 (number)
-// "true"  → true (boolean)
-// "hello" → "hello" (string)
+```bash
+npx envguard
 ```
 
-### When to use it
-- **Prototyping**: Get type coercion without writing a schema.
-- **Small Scripts**: When you have many variables and just want them to "just work".
-- **Strict Inference**: Use `strict: true` to catch botched environment variables.
+**It identifies:**
+- **Unused**: Variables defined in `.env` but never used in code.
+- **Missing**: `process.env.VAR` calls in code that aren't defined in `.env`.
+- **Invalid**: Variables set to `null`, `undefined`, or empty strings.
 
-### inferEnv() vs guard()
+---
 
-| Feature | `inferEnv()` | `guard()` |
-|---|---|---|
-| **Setup** | Zero boilerplate | Requires schema |
-| **Validation** | Inference based | Strict requirement checks |
-| **Required Vars** | No checks | Throws if missing |
-| **Use Case** | Quick & easy | Production-grade safety |
+## 📊 Dev Dashboard (UI)
 
-### Strict mode & Overrides
-You can enable `strict` mode to throw errors on ambiguous strings (like `"123abc"`) and provide overrides for specific keys.
+Launch a local dashboard to visualize your environment health in real-time.
 
-```js
-const env = inferEnv({
-  strict: true,
-  PORT: { type: 'number' } // Enforce type for specific keys
-})
+```bash
+npx envguard dev-ui
 ```
+
+Starts a server at `http://localhost:3000` with:
+- **Real-time Polling**: Updates automatically as you edit files.
+- **Type Mismatches**: Flagged conflicts between your values and an optional `env.schema.js`.
+- **Status Badges**: Clear `✓`, `⚠`, and `✗` indicators for every variable.
+
+### ⚠️ Important: How to View the Dashboard
+The dashboard is a **web application** that requires the `envguard` local server to be running.
+*   **Do NOT open `index.html` directly** from your browser (using `File > Open` or double-clicking).
+*   If you open the file directly, it will show **empty stats** because it won't be able to connect to the backend scanner.
+*   **Always use the command:** `npx envguard dev-ui` and navigate to `http://localhost:3000`.
+
+### Requirements
+- **Project Root**: Run the command from your project's root directory.
+- **`.env` file**: Must have a `.env` file present for comparison.
+- **Code Usage**: Must have at least one `process.env.VAR` usage in your code for the scanner to detect.
 
 ---
 
 ## What it does
 
-- Checks all required vars are present
-- Coerces types — `"3000"` → `3000`, `"true"` → `true`
-- Validates `minLength` for sensitive strings like secrets and keys
-- Uses `default` values when a var isn't set
-- Throws **one combined error** at startup listing everything that's wrong
+- **Deep Scanning**: Detects dot notation (`process.env.VAR`), bracket notation (`process.env['VAR']`), and **destructuring** (`const { VAR } = process.env`).
+- **Robust Parsing**: Correctly handles comments, quotes, and optional chaining (`process.env?.VAR`).
+- **One Combined Error**: Logs all validation failures at once so you can fix them in one go.
+- **Zero Dependencies**: Lightweight and fast, built on native Node.js logic.
 
 ---
 
-## Error output
-
-If something is missing or invalid, you get a clear message instead of a cryptic runtime crash:
-
-```
-[envguard] Missing or invalid environment variables:
-  ✗ DATABASE_URL → required but not set
-  ✗ JWT_SECRET   → must be at least 32 characters (got 8)
-  ✗ PORT         → expected number, got "abc"
-
-Fix these before starting the server.
-```
-
----
-
-## Schema options
+## Schema Options
 
 | Option | Type | Description |
 |---|---|---|
-| `type` | `'string'` `'number'` `'boolean'` | Expected type. String is returned as-is, others are coerced. |
+| `type` | `'string'` `'number'` `'boolean'` | Expected type. Others are coerced. |
 | `required` | `boolean` | Throws if the var is not set. |
 | `default` | any | Fallback value if the var is not set. |
-| `minLength` | `number` | Minimum character length. Useful for secrets and API keys. |
-
----
-
-## Notes
-
-- `envguard` does **not** load your `.env` file. Use [dotenv](https://www.npmjs.com/package/dotenv) for that.
-- Call `guard()` at the **top of your entry file**, before anything else runs.
-- `required` and `default` can't both be set on the same field — if it's required, there's no fallback.
+| `minLength` | `number` | Minimum character length for strings. |
 
 ---
 

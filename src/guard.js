@@ -5,7 +5,7 @@ import { coerce } from "./utils.js";
  * @param {Object} schema 
  * @returns {Object}
  */
-export function guard(schema) {
+export function guard(schema, options = {}) {
   const errors = [];
   const result = {};
 
@@ -51,5 +51,37 @@ export function guard(schema) {
     );
   }
 
-  return result;
+  return new Proxy(result, {
+    get(target, prop) {
+      if (typeof prop === 'symbol') {
+        return target[prop];
+      }
+      
+      if (prop === 'toJSON' || prop === 'then' || prop === '__esModule') {
+        return target[prop];
+      }
+
+      if (prop in Object.prototype) {
+        return target[prop];
+      }
+
+      if (prop === 'has' && !('has' in schema)) {
+        return (key) => target[key] !== undefined;
+      }
+
+      const isUnvalidated = !(prop in schema);
+
+      if (options.strict && isUnvalidated) {
+        throw new Error(`[envguard] Attempted to access undefined environment variable: ${String(prop)}`);
+      }
+
+      const isMissing = target[prop] === undefined;
+
+      if (isMissing && (!isUnvalidated || options.strict)) {
+        throw new Error(`[envguard] Attempted to access undefined environment variable: ${String(prop)}`);
+      }
+
+      return target[prop];
+    }
+  });
 }
